@@ -34,7 +34,7 @@ dE = 0
 # ademas permite rotar el hexago por un multiplo
 # n de n_alpha
 def tile (label, n_alpha):
-    tile = til[label]
+    tile = til[abs(label) - 1]
     return tile[n_alpha:] + tile[0:n_alpha]
 
 def arista_dE (R, C):

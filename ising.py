@@ -17,7 +17,7 @@ import getopt,sys
 import time
 from random import randint
 try:
-	import Numeric as N
+	import numpy as N
 	import pygame
 	import pygame.surfarray as surfarray
 except ImportError:
