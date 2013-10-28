@@ -18,7 +18,7 @@ def Initialize (nSites):
 
 # Set defaults
 T = 1  # Temperature  
-nSites   = 10 #30
+nSites   = 20 #30
 CellSize = 50  #16
 nSteps = 1000    
 
@@ -55,7 +55,7 @@ def tileFNR (label, n_alpha):
     return tile[n_alpha:] + tile[0:n_alpha]
 
 def Match_Detector (R, C):
-    return 1 if R[3] != C[0] else 0
+    return 0 if R[3] != C[0] else 1
 
 def dE_FNRCalculator (V):
     S = [[2,3],[3,2],[3,1],[2,1],[1,2],[1,3]]
@@ -123,13 +123,15 @@ def dU (i,j,q_0,L):
     
     return Post_dE(i,j,q_0,L) - Pre_dE (i,j,L)
 
-gen_a = 50 * np.array([math.cos(math.pi/6),math.sin(math.pi/6)])
-gen_b = 50 * np.array([math.cos(-math.pi/6),math.sin(-math.pi/6)])
-offset = np.array([+13.,+13.])
+zoom_factor = 10.0/nSites
+
+gen_a = 50 *  np.array([math.cos(math.pi/6),math.sin(math.pi/6)])
+gen_b = 50 *  np.array([math.cos(-math.pi/6),math.sin(-math.pi/6)])
+
+
 def ColorCell(cell, i, j):
-   angle = 60*(abs(cell)-1) 
-   pos = np.array([0,200]) + i*gen_a + j*gen_b
-   surf = pygame.transform.flip(hexagones[abs(cell)-1], False, True if cell < 0 else False)
+   pos = zoom_factor * (np.array([0,770]) + i*gen_a + j*gen_b)
+   surf = pygame.transform.rotozoom(pygame.transform.flip(hexagones[abs(cell)-1], False, True if cell < 0 else False),0, zoom_factor)
    screen.blit(surf, pos)
  
 # Get command line arguments, if any
@@ -145,7 +147,7 @@ print 'nSites = ', nSites
 print 'CellSize = ', CellSize
 print 'nSteps = ',nSteps
    
-size = (CellSize*nSites*2,CellSize*nSites)
+size = (int(CellSize*nSites*2*zoom_factor),int(CellSize*nSites*zoom_factor))
 	# Set initial configuration
 state = Initialize(nSites)
 
@@ -167,19 +169,28 @@ hexagones = [pygame.image.load('hex'+str(i) + '.png') for i in range(1,7)]
 def paintLatice(Latice):
    for i in range(nSites):
       for j in range(nSites):
-         print(Latice[i][j])
          ColorCell(Latice[i][j],i,j)
 
-ColorCell(1,0,0)
-ColorCell(-1,0,1)
-ColorCell(-2,1,1)
-ColorCell(2,1,2)
-ColorCell(3,2,2)
-ColorCell(-3,2,3)
-ColorCell(4,3,3)
-ColorCell(-4,3,4)
-ColorCell(5,4,4)
-ColorCell(-5,4,5)
+#ColorCell(1,0,0)
+#ColorCell(-1,0,1)
+#ColorCell(-2,1,1)
+#ColorCell(2,1,2)
+#ColorCell(3,2,2)
+#ColorCell(-3,2,3)
+#ColorCell(4,3,3)
+#ColorCell(-4,3,4)
+#ColorCell(5,4,4)
+#ColorCell(-5,4,5)
+#ColorCell(6,5,5)
+#ColorCell(-6,5,6)
+#Vent  = Wmaker(Latice, 4,4)
+#print "Energia primeros" + str(dE_FNRCalculator(Vent)) + " segundos:" + str( dE_SNRCalculator (Vent)) 
+#print (dE_FNRCalculator(Vent) + dE_SNRCalculator(Vent))
+#for i in range(-2,3):
+#	for j in range (-2,3):
+#		ColorCell(Vent[i][j], i + 5, j + 5)
+
+
 paintLatice(Latice)
 t = 0
 t0 = time.clock()
@@ -196,8 +207,8 @@ while flag > 0:
 #	    # Quit running simulation
 		if event.type == pygame.QUIT: sys.exit()
 #		# randomly select cell 
-        i = np.random.randint(0,10) 
-       	j = np.random.randint(0,10)
+        i = np.random.randint(0,nSites) 
+       	j = np.random.randint(0,nSites)
         q_0 = np.random.choice(Tiles)
 #       	# Any system energy change if flip dipol
     	dE = dU(i,j,q_0,Latice)
