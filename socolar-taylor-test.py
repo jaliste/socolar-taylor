@@ -17,9 +17,9 @@ def Initialize (nSites):
     return (TRANS[FORM])
 
 # Set defaults
-T = 3  # Temperature  
+T = 1  # Temperature  
 nSites   = 10 #30
-CellSize = 24  #16
+CellSize = 50  #16
 nSteps = 1000    
 
 
@@ -123,10 +123,14 @@ def dU (i,j,q_0,L):
     
     return Post_dE(i,j,q_0,L) - Pre_dE (i,j,L)
 
-def ColorCell(L,i,j):
-   if L[i][j] > 0:    # dipole spin is up
-	  screen.fill(UpColor,[i*CellSize,j*CellSize,CellSize,CellSize])
-   else : screen.fill(DownColor,[i*CellSize,j*CellSize,CellSize,CellSize])
+gen_a = 50 * np.array([math.cos(math.pi/6),math.sin(math.pi/6)])
+gen_b = 50 * np.array([math.cos(-math.pi/6),math.sin(-math.pi/6)])
+offset = np.array([+13.,+13.])
+def ColorCell(cell, i, j):
+   angle = 60*(abs(cell)-1) 
+   pos = np.array([0,200]) + i*gen_a + j*gen_b
+   surf = pygame.transform.flip(hexagones[abs(cell)-1], False, True if cell < 0 else False)
+   screen.blit(surf, pos)
  
 # Get command line arguments, if any
 opts,args = getopt.getopt(sys.argv[1:],'t:n:c:s:')
@@ -141,7 +145,7 @@ print 'nSites = ', nSites
 print 'CellSize = ', CellSize
 print 'nSteps = ',nSteps
    
-size = (CellSize*nSites,CellSize*nSites)
+size = (CellSize*nSites*2,CellSize*nSites)
 	# Set initial configuration
 state = Initialize(nSites)
 
@@ -155,15 +159,28 @@ pygame.display.set_caption('2D Ising Model Simulator')
 screen.fill(UpColor)
 pygame.display.flip()
 	# Create RGB array whose elements refer to screen pixels
-sptmdiag = surfarray.pixels3d(screen)
+#sptmdiag = surfarray.pixels3d(screen)
     
-
+hexagones = [pygame.image.load('hex'+str(i) + '.png') for i in range(1,7)]
+#screen.blit (hexa_image, hexa)
     # display initial dipole configuration
-for i in range(nSites):
-   for j in range(nSites):
-      if Latice[i][j] < 0:
-	    screen.fill(DownColor,[i*CellSize,j*CellSize,CellSize,CellSize])
+def paintLatice(Latice):
+   for i in range(nSites):
+      for j in range(nSites):
+         print(Latice[i][j])
+         ColorCell(Latice[i][j],i,j)
 
+ColorCell(1,0,0)
+ColorCell(-1,0,1)
+ColorCell(-2,1,1)
+ColorCell(2,1,2)
+ColorCell(3,2,2)
+ColorCell(-3,2,3)
+ColorCell(4,3,3)
+ColorCell(-4,3,4)
+ColorCell(5,4,4)
+ColorCell(-5,4,5)
+paintLatice(Latice)
 t = 0
 t0 = time.clock()
     # total execution time
@@ -187,12 +204,13 @@ while flag > 0:
 #    	# flip if system will have lower energy
     	if dE <= 0. :
            Latice[i][j] = q_0
-           ColorCell(Latice, i, j)
+           ColorCell(Latice[i][j], i, j)
 #        # otherwise do random decision     
-        elif random(1) < exp(-dE/T) :
+        elif random(1) < exp(-dE/T):
              Latice[i][j] = q_0
-             ColorCell(Latice, i, j)
+             ColorCell(Latice[i][j], i, j)
 #    
+
 	pygame.display.flip()
 	t += 1
 	if (t % nSteps) == 0:
