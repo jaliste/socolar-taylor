@@ -1,3 +1,4 @@
+# vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
 import numpy as np
 from numpy import *
 from numpy.random import *
@@ -5,10 +6,11 @@ import getopt,sys
 import time
 from random import randint
 try:
-      import pygame
-      import pygame.surfarray as surfarray
+    
+    import pygame
+    import pygame.surfarray as surfarray
 except ImportError:
-	raise ImportError, "Numpy and Pygame required."
+    raise ImportError, "Numpy and Pygame required."
 
 def Initialize (nSites):
     FORM = np.random.randint(0,11, (nSites,nSites))
@@ -17,27 +19,23 @@ def Initialize (nSites):
     return (TRANS[FORM])
 
 # Set defaults
-T = 1  # Temperature  
-nSites   = 20 #30
-CellSize = 50  #16
-nSteps = 1000    
-
-
+T = 2.0  # Temperature  
+nSites   = 8 #30
+CellSize = 64  #16
+nSteps = 1000
+dT = 0.01
+step = 0
 #-----------------------------------------------------
 
-
-
-Latice =   Initialize (nSites)
+Latice = Initialize (nSites)
 Tiles = array(range(-6,0) + range(1,7) )
-  
-    
 
 def moduler (K,N):
     return array(range(K-2,K+3)) % N
-    
+
 def Wmaker (M, i, j):
     L = M.shape
-    
+
     return M[moduler(i,L[0])] [:, moduler(j,L[1])]
 
 def tileFNR (label, n_alpha):
@@ -122,6 +120,16 @@ def Post_dE(i,j,q_0,L):
 def dU (i,j,q_0,L):
     
     return Post_dE(i,j,q_0,L) - Pre_dE (i,j,L)
+    
+def global_E(D,M):
+    E=0
+    for i in range(D):
+        for j in range(D):
+            E +=Pre_dE (i,j,M)
+        
+    return E
+
+IE = global_E(nSites,Latice)    
 
 zoom_factor = 10.0/nSites
 
@@ -130,46 +138,54 @@ gen_b = 50 *  np.array([math.cos(-math.pi/6),math.sin(-math.pi/6)])
 
 
 def ColorCell(cell, i, j):
-   pos = zoom_factor * (np.array([0,770]) + i*gen_a + j*gen_b)
+   pos = zoom_factor * (np.array([180,280]) + i*gen_a + j*gen_b)
    surf = pygame.transform.rotozoom(pygame.transform.flip(hexagones[abs(cell)-1], False, True if cell < 0 else False),0, zoom_factor)
    screen.blit(surf, pos)
  
 # Get command line arguments, if any
 opts,args = getopt.getopt(sys.argv[1:],'t:n:c:s:')
 for key,val in opts:
-	if key == '-t': T        = int(val)
-	if key == '-n': nSites   = int(val)
-	if key == '-c': CellSize = int(val)
-	if key == '-s': nSteps   = int(val)
-	
+    if key == '-t': T        = int(val)
+    if key == '-n': nSites   = int(val)
+    if key == '-c': CellSize = int(val)
+    if key == '-s': nSteps   = int(val)
+
 print 'T = ', T
 print 'nSites = ', nSites
 print 'CellSize = ', CellSize
 print 'nSteps = ',nSteps
+print 'Initial Global Energy = ',global_E(nSites,Latice)
    
 size = (int(CellSize*nSites*2*zoom_factor),int(CellSize*nSites*zoom_factor))
-	# Set initial configuration
+
+# Set initial configuration
 state = Initialize(nSites)
 
 pygame.init()
 UpColor = 255, 0, 0       # red
 DownColor = 0, 0, 255     # blue
-	# Get display surface
+
+# Get display surface
 screen = pygame.display.set_mode(size)
 pygame.display.set_caption('2D Ising Model Simulator')
-	# Clear display
+
+# Clear display
 screen.fill(UpColor)
 pygame.display.flip()
-	# Create RGB array whose elements refer to screen pixels
+
+# Create RGB array whose elements refer to screen pixels
 #sptmdiag = surfarray.pixels3d(screen)
     
 hexagones = [pygame.image.load('hex'+str(i) + '.png') for i in range(1,7)]
 #screen.blit (hexa_image, hexa)
-    # display initial dipole configuration
+# display initial dipole configuration
 def paintLatice(Latice):
-   for i in range(nSites):
-      for j in range(nSites):
-         ColorCell(Latice[i][j],i,j)
+    for i in range(nSites):
+        for j in range(nSites):
+            ColorCell(Latice[i][j],i,j)
+
+def N_tau(tau):
+    return 120
 
 #ColorCell(1,0,0)
 #ColorCell(-1,0,1)
@@ -201,37 +217,52 @@ t_total = time.clock()
 flag = 1
 while flag > 0:
 
-             
-        
-	for event in pygame.event.get():
-#	    # Quit running simulation
-		if event.type == pygame.QUIT: sys.exit()
-#		# randomly select cell 
-        i = np.random.randint(0,nSites) 
-       	j = np.random.randint(0,nSites)
-        q_0 = np.random.choice(Tiles)
-#       	# Any system energy change if flip dipol
-    	dE = dU(i,j,q_0,Latice)
-#    	# flip if system will have lower energy
-    	if dE <= 0. :
-           Latice[i][j] = q_0
-           ColorCell(Latice[i][j], i, j)
-#        # otherwise do random decision     
-        elif random(1) < exp(-dE/T):
-             Latice[i][j] = q_0
-             ColorCell(Latice[i][j], i, j)
-#    
+    for event in pygame.event.get():
+    # Quit running simulation
+        if event.type == pygame.QUIT: sys.exit()
 
-	pygame.display.flip()
-	t += 1
-	if (t % nSteps) == 0:
-		t1 = time.clock()
-		if (t1-t0) > 0.001 :
-		   print 't1 = ', t1
-		   print "Iterations per second: ", float(nSteps) / (t1 - t0)
-		t0 = t1
-#	# calculate execution time
-	dt = time.clock()-t_total
-	if dt > 200.0 : flag = -1
+    # randomly select cell 
+    i = np.random.randint(0,nSites) 
+    j = np.random.randint(0,nSites)
+    q_0 = np.random.choice(Tiles)
+
+    # Any system energy change if flip dipol
+    dE = dU(i,j,q_0,Latice)
+
+    # flip if system will have lower energy
+    if dE <= 0.:
+        Latice[i][j] = q_0
+        ColorCell(Latice[i][j], i, j)
+
+        # otherwise do random decision     
+    elif random(1) < exp(-dE/T):
+        Latice[i][j] = q_0
+        ColorCell(Latice[i][j], i, j)
+
+
+    pygame.display.flip()
+    t += 1
+
+    if (t % nSteps) == 0:
+        t1 = time.clock()
+        if (t1-t0) > 0.001:
+            print 't1 = ', t1
+            print "Iterations per second: ", float(nSteps) / (t1 - t0)
+            print 'Global Energy = ',global_E(nSites,Latice)
+            t0 = t1
+            # calculate execution time
+            dt = time.clock()-t_total
+
+      #if T < 0.01: 
+         #flag = -1
+      #   print 'Initial Global Energy = ',IE   
+      #   print 'Final Global Energy = ',global_E(nSites,Latice) 
+      #   if global_E(nSites,Latice)==0:
+      #       flag = -1
+    step += 1
+    if step >= N_tau(1) and T-dT > 0.0:
+        T -= dT
+        step = 0
+        print "Temperature:", T
 ##matshow(state)	
 print "Total simulation time is %g seconds of temperature %g K" % (dt,T)
