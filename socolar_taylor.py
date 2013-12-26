@@ -122,10 +122,10 @@ def dU (i,j,q_0,L):
     return Post_dE(i,j,q_0,L) - Pre_dE (i,j,L)
     
 def global_E(D,M):
-    E=0
+    E = 0
     for i in range(D):
         for j in range(D):
-            E +=Pre_dE (i,j,M)
+            E += Pre_dE (i,j,M)
         
     return E
 
@@ -136,10 +136,9 @@ zoom_factor = 10.0/nSites
 gen_a = 50 *  np.array([math.cos(math.pi/6),math.sin(math.pi/6)])
 gen_b = 50 *  np.array([math.cos(-math.pi/6),math.sin(-math.pi/6)])
 
-
 def ColorCell(cell, i, j):
-   pos = zoom_factor * (np.array([180,280]) + i*gen_a + j*gen_b)
-   surf = pygame.transform.rotozoom(pygame.transform.flip(hexagones[abs(cell)-1], False, True if cell < 0 else False),0, zoom_factor)
+   pos = zoom_factor * (np.array([20,20]) + i*gen_a + j*gen_b)
+   surf = pygame.transform.rotozoom(hexagones[cell], 0, zoom_factor)
    screen.blit(surf, pos)
  
 # Get command line arguments, if any
@@ -155,7 +154,6 @@ print 'nSites = ', nSites
 print 'CellSize = ', CellSize
 print 'nSteps = ',nSteps
 print 'Initial Global Energy = ',global_E(nSites,Latice)
-   
 size = (int(CellSize*nSites*2*zoom_factor),int(CellSize*nSites*zoom_factor))
 
 # Set initial configuration
@@ -167,7 +165,7 @@ DownColor = 0, 0, 255     # blue
 
 # Get display surface
 screen = pygame.display.set_mode(size)
-pygame.display.set_caption('2D Ising Model Simulator')
+pygame.display.set_caption('2D Socolar-Taylor Model Simulator')
 
 # Clear display
 screen.fill(UpColor)
@@ -176,7 +174,11 @@ pygame.display.flip()
 # Create RGB array whose elements refer to screen pixels
 #sptmdiag = surfarray.pixels3d(screen)
     
-hexagones = [pygame.image.load('hex'+str(i) + '.png') for i in range(1,7)]
+hexagones = dict()
+for idx in range(-6,0) + range(1,7):
+    hexagones[idx] = pygame.image.load('hex' + str(idx) + '.png')
+
+
 #screen.blit (hexa_image, hexa)
 # display initial dipole configuration
 def paintLatice(Latice):
@@ -214,55 +216,55 @@ t0 = time.clock()
 t_total = time.clock()
 
 # Main loop
-flag = 1
-while flag > 0:
+if __name__ == "__main__":
+    flag = 1
+    while flag > 0:
 
-    for event in pygame.event.get():
-    # Quit running simulation
-        if event.type == pygame.QUIT: sys.exit()
+        for event in pygame.event.get():
+        # Quit running simulation
+            if event.type == pygame.QUIT: sys.exit()
 
-    # randomly select cell 
-    i = np.random.randint(0,nSites) 
-    j = np.random.randint(0,nSites)
-    q_0 = np.random.choice(Tiles)
+        # randomly select cell 
+        i = np.random.randint(0,nSites) 
+        j = np.random.randint(0,nSites)
+        q_0 = np.random.choice(Tiles)
 
-    # Any system energy change if flip dipol
-    dE = dU(i,j,q_0,Latice)
+        # Any system energy change if flip dipol
+        dE = dU(i,j,q_0,Latice)
 
-    # flip if system will have lower energy
-    if dE <= 0.:
-        Latice[i][j] = q_0
-        ColorCell(Latice[i][j], i, j)
+        # flip if system will have lower energy
+        if dE <= 0.:
+            Latice[i][j] = q_0
+            ColorCell(Latice[i][j], i, j)
 
-        # otherwise do random decision     
-    elif random(1) < exp(-dE/T):
-        Latice[i][j] = q_0
-        ColorCell(Latice[i][j], i, j)
+            # otherwise do random decision     
+        elif random(1) < exp(-dE/T):
+            Latice[i][j] = q_0
+            ColorCell(Latice[i][j], i, j)
 
 
-    pygame.display.flip()
-    t += 1
+        pygame.display.flip()
+        t += 1
 
-    if (t % nSteps) == 0:
-        t1 = time.clock()
-        if (t1-t0) > 0.001:
-            print 't1 = ', t1
-            print "Iterations per second: ", float(nSteps) / (t1 - t0)
-            print 'Global Energy = ',global_E(nSites,Latice)
-            t0 = t1
-            # calculate execution time
-            dt = time.clock()-t_total
+        if (t % nSteps) == 0:
+            t1 = time.clock()
+            if (t1-t0) > 0.001:
+                print 't1 = ', t1
+                print "Iterations per second: ", float(nSteps) / (t1 - t0)
+                print 'Global Energy = ',global_E(nSites,Latice)
+                t0 = t1
+                # calculate execution time
+                dt = time.clock()-t_total
 
-      #if T < 0.01: 
-         #flag = -1
-      #   print 'Initial Global Energy = ',IE   
-      #   print 'Final Global Energy = ',global_E(nSites,Latice) 
-      #   if global_E(nSites,Latice)==0:
-      #       flag = -1
-    step += 1
-    if step >= N_tau(1) and T-dT > 0.0:
-        T -= dT
-        step = 0
-        print "Temperature:", T
-##matshow(state)	
-print "Total simulation time is %g seconds of temperature %g K" % (dt,T)
+          #if T < 0.01: 
+             #flag = -1
+          #   print 'Initial Global Energy = ',IE   
+          #   print 'Final Global Energy = ',global_E(nSites,Latice) 
+          #   if global_E(nSites,Latice)==0:
+          #       flag = -1
+        step += 1
+        if step >= N_tau(1) and T-dT > 0.0:
+            T -= dT
+            step = 0
+            print "Temperature:", T
+
