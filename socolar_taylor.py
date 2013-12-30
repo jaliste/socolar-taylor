@@ -19,8 +19,8 @@ def Initialize (nSites):
     return (TRANS[FORM])
 
 # Set defaults
-T = 2.0  # Temperature  
-nSites   = 8 #30
+T = 1.0  # Temperature  
+nSites   = 6  #30
 CellSize = 64  #16
 nSteps = 1000
 dT = 0.01
@@ -131,13 +131,13 @@ def global_E(D,M):
 
 IE = global_E(nSites,Latice)    
 
-zoom_factor = 10.0/nSites
+zoom_factor = 7.0/nSites
 
 gen_a = 50 *  np.array([math.cos(math.pi/6),math.sin(math.pi/6)])
-gen_b = 50 *  np.array([math.cos(-math.pi/6),math.sin(-math.pi/6)])
+gen_b = 50 *  np.array([0,1])
 
 def ColorCell(cell, i, j):
-   pos = zoom_factor * (np.array([20,20]) + i*gen_a + j*gen_b)
+   pos = zoom_factor * (np.array([100,0]) + i*gen_a + j*gen_b)
    surf = pygame.transform.rotozoom(hexagones[cell], 0, zoom_factor)
    screen.blit(surf, pos)
  
@@ -154,7 +154,7 @@ print 'nSites = ', nSites
 print 'CellSize = ', CellSize
 print 'nSteps = ',nSteps
 print 'Initial Global Energy = ',global_E(nSites,Latice)
-size = (int(CellSize*nSites*2*zoom_factor),int(CellSize*nSites*zoom_factor))
+size = (int(CellSize*nSites*zoom_factor),int(CellSize*1.5*nSites*zoom_factor))
 
 # Set initial configuration
 state = Initialize(nSites)
@@ -185,9 +185,11 @@ def paintLatice(Latice):
     for i in range(nSites):
         for j in range(nSites):
             ColorCell(Latice[i][j],i,j)
+    pygame.display.flip()
+
 
 def N_tau(tau):
-    return 120
+    return 12000000
 
 #ColorCell(1,0,0)
 #ColorCell(-1,0,1)
@@ -235,22 +237,19 @@ if __name__ == "__main__":
         # flip if system will have lower energy
         if dE <= 0.:
             Latice[i][j] = q_0
-            ColorCell(Latice[i][j], i, j)
 
             # otherwise do random decision     
         elif random(1) < exp(-dE/T):
             Latice[i][j] = q_0
-            ColorCell(Latice[i][j], i, j)
 
 
-        pygame.display.flip()
         t += 1
 
         if (t % nSteps) == 0:
+            paintLatice(Latice)
+            pygame.display.flip()
             t1 = time.clock()
             if (t1-t0) > 0.001:
-                print 't1 = ', t1
-                print "Iterations per second: ", float(nSteps) / (t1 - t0)
                 print 'Global Energy = ',global_E(nSites,Latice)
                 t0 = t1
                 # calculate execution time
@@ -263,7 +262,7 @@ if __name__ == "__main__":
           #   if global_E(nSites,Latice)==0:
           #       flag = -1
         step += 1
-        if step >= N_tau(1) and T-dT > 0.0:
+        if step >= N_tau(1) and T-dT > 0.1:
             T -= dT
             step = 0
             print "Temperature:", T
