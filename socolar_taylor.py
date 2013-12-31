@@ -1,42 +1,31 @@
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
 import numpy as np
-from numpy import *
-from numpy.random import *
 import getopt,sys
 import time
-from random import randint
+import math
 try:
-    
     import pygame
     import pygame.surfarray as surfarray
 except ImportError:
     raise ImportError, "Numpy and Pygame required."
 
+
 def Initialize (nSites):
     FORM = np.random.randint(0,11, (nSites,nSites))
-    TRANS = array(range(-6,0) + range(1,7) )
-    
+    TRANS = np.array(range(-6,0) + range(1,7) )
+
     return (TRANS[FORM])
 
-# Set defaults
-T = 1.0  # Temperature  
-nSites   = 6  #30
-CellSize = 64  #16
-nSteps = 1000
-dT = 0.01
-step = 0
-#-----------------------------------------------------
-
-Latice = Initialize (nSites)
-Tiles = array(range(-6,0) + range(1,7) )
 
 def moduler (K,N):
-    return array(range(K-2,K+3)) % N
+    return np.array(range(K-2,K+3)) % N
+
 
 def Wmaker (M, i, j):
     L = M.shape
 
     return M[moduler(i,L[0])] [:, moduler(j,L[1])]
+
 
 def tileFNR (label, n_alpha):
     #Hexagonos
@@ -52,8 +41,10 @@ def tileFNR (label, n_alpha):
     tile = til[abs(label) - 1]
     return tile[n_alpha:] + tile[0:n_alpha]
 
+
 def Match_Detector (R, C):
     return 0 if R[3] != C[0] else 1
+
 
 def dE_FNRCalculator (V):
     S = [[2,3],[3,2],[3,1],[2,1],[1,2],[1,3]]
@@ -65,6 +56,7 @@ def dE_FNRCalculator (V):
         C = tileFNR(V[2][2], rot[i])
         dE += Match_Detector(R,C)
     return dE
+
 
 def tileSNR (label, n_alpha):
     #Hexagonos
@@ -92,12 +84,11 @@ def tileSNR (label, n_alpha):
         tile = f[(abs(label))-1]
     return tile[n_alpha:] + tile[0:n_alpha]
 
+
 def dE_SNRCalculator (V):
     S = [[1,4],[3,3],[4,1],[3,0],[1,1],[0,3]]
     rot= [0,1,2,3,4,5]
     dE = 0
-    
-    
     
     for i, vecino in enumerate(S):
         R = tileSNR(V[vecino[0]][vecino[1]], rot[i])
@@ -109,7 +100,8 @@ def dE_SNRCalculator (V):
 def Pre_dE (i,j,L):
     V = Wmaker(L, i, j)
     return dE_FNRCalculator(V) + dE_SNRCalculator (V)
-    
+
+   
 def Post_dE(i,j,q_0,L):
     V = Wmaker(L, i, j)
     
@@ -117,10 +109,12 @@ def Post_dE(i,j,q_0,L):
     
     return dE_FNRCalculator(V) + dE_SNRCalculator (V)
     
+
 def dU (i,j,q_0,L):
     
     return Post_dE(i,j,q_0,L) - Pre_dE (i,j,L)
     
+
 def global_E(D,M):
     E = 0
     for i in range(D):
@@ -129,96 +123,101 @@ def global_E(D,M):
         
     return E
 
-IE = global_E(nSites,Latice)    
 
-zoom_factor = 7.0/nSites
+zoom_factor = 7.0
+gen_b = 53 *  np.array([1,0])
+gen_a = 53 *  np.array([math.cos(math.pi/3), math.sin(math.pi/3)])
 
-gen_a = 50 *  np.array([math.cos(math.pi/6),math.sin(math.pi/6)])
-gen_b = 50 *  np.array([0,1])
 
 def ColorCell(cell, i, j):
-   pos = zoom_factor * (np.array([100,0]) + i*gen_a + j*gen_b)
-   surf = pygame.transform.rotozoom(hexagones[cell], 0, zoom_factor)
+   pos = zoom_factor * (np.array([0,0]) + i*gen_a + j*gen_b)
+   surf = pygame.transform.rotozoom(hexagones[cell], -90, zoom_factor)
    screen.blit(surf, pos)
  
 # Get command line arguments, if any
-opts,args = getopt.getopt(sys.argv[1:],'t:n:c:s:')
-for key,val in opts:
-    if key == '-t': T        = int(val)
-    if key == '-n': nSites   = int(val)
-    if key == '-c': CellSize = int(val)
-    if key == '-s': nSteps   = int(val)
+Tiles = np.array(range(-6,0) + range(1,7) )
 
-print 'T = ', T
-print 'nSites = ', nSites
-print 'CellSize = ', CellSize
-print 'nSteps = ',nSteps
-print 'Initial Global Energy = ',global_E(nSites,Latice)
-size = (int(CellSize*nSites*zoom_factor),int(CellSize*1.5*nSites*zoom_factor))
+#opts,args = getopt.getopt(sys.argv[1:],'t:n:c:s:')
+#for key,val in opts:
+#    if key == '-t': T        = int(val)
+#    if key == '-n': nSites   = int(val)
+#    if key == '-c': CellSize = int(val)
+#    if key == '-s': nSteps   = int(val)
 
-# Set initial configuration
-state = Initialize(nSites)
+#print 'T = ', T
+#print 'nSites = ', nSites
+#print 'CellSize = ', CellSize
+#print 'nSteps = ',nSteps
+#print 'Initial Global Energy = ',global_E(nSites,Latice)
 
-pygame.init()
-UpColor = 255, 0, 0       # red
-DownColor = 0, 0, 255     # blue
 
-# Get display surface
-screen = pygame.display.set_mode(size)
-pygame.display.set_caption('2D Socolar-Taylor Model Simulator')
-
-# Clear display
-screen.fill(UpColor)
-pygame.display.flip()
-
-# Create RGB array whose elements refer to screen pixels
-#sptmdiag = surfarray.pixels3d(screen)
+def subLattice(X, nSites):
+    return np.bmat([[X]*nSites]*nSites) == 1
     
-hexagones = dict()
-for idx in range(-6,0) + range(1,7):
-    hexagones[idx] = pygame.image.load('hex' + str(idx) + '.png')
 
-
-#screen.blit (hexa_image, hexa)
-# display initial dipole configuration
-def paintLatice(Latice):
+def paintLattice(Lattice):
     for i in range(nSites):
         for j in range(nSites):
-            ColorCell(Latice[i][j],i,j)
+            ColorCell(Lattice[i][j],i,j)
     pygame.display.flip()
 
 
 def N_tau(tau):
-    return 12000000
-
-#ColorCell(1,0,0)
-#ColorCell(-1,0,1)
-#ColorCell(-2,1,1)
-#ColorCell(2,1,2)
-#ColorCell(3,2,2)
-#ColorCell(-3,2,3)
-#ColorCell(4,3,3)
-#ColorCell(-4,3,4)
-#ColorCell(5,4,4)
-#ColorCell(-5,4,5)
-#ColorCell(6,5,5)
-#ColorCell(-6,5,6)
-#Vent  = Wmaker(Latice, 4,4)
-#print "Energia primeros" + str(dE_FNRCalculator(Vent)) + " segundos:" + str( dE_SNRCalculator (Vent)) 
-#print (dE_FNRCalculator(Vent) + dE_SNRCalculator(Vent))
-#for i in range(-2,3):
-#	for j in range (-2,3):
-#		ColorCell(Vent[i][j], i + 5, j + 5)
+    return 12000
 
 
-paintLatice(Latice)
-t = 0
-t0 = time.clock()
-    # total execution time
+def init_screen(size):
+    pygame.init()
+    UpColor = 255, 0, 0       # red
+    DownColor = 0, 0, 255     # blue
+    screen = pygame.display.set_mode(size)
+    pygame.display.set_caption('2D Socolar-Taylor Model Simulator')
+    screen.fill(UpColor)
+    pygame.display.flip()
+    return screen
+    
+
 t_total = time.clock()
 
+# Get display surface
+
+# Clear display
+
+# Create RGB array whose elements refer to screen pixels
+#sptmdiag = surfarray.pixels3d(screen)
+
+A = np.mat('1 0; 0 0')
+B = np.mat('0 1; 0 0')
+C = np.mat('0 0; 1 0')
+D = np.mat('0 0; 0 1')
+
+
+# Set defaults
+T = 1.0  # Temperature  
+nSites = 16  #30
+CellSize = 64  #16
+zoom_factor = 7.0/nSites
+hexagones = dict()
+for idx in range(-6,0) + range(1,7):
+    hexagones[idx] = pygame.image.load('hex' + str(idx) + '.png')
+
+#-----------------------------------------------------
+
+Latice = Initialize (nSites)
+size = (int(CellSize*1.5*nSites*zoom_factor),int(CellSize*nSites*zoom_factor))
+
+screen = init_screen(size)
+
 # Main loop
-if __name__ == "__main__":
+def run():
+    global T
+    global Latice
+
+    nSteps = 1000
+    dT = 0.01
+    t = 0
+    t0 = time.clock()
+    step = 0
     flag = 1
     while flag > 0:
 
@@ -239,18 +238,16 @@ if __name__ == "__main__":
             Latice[i][j] = q_0
 
             # otherwise do random decision     
-        elif random(1) < exp(-dE/T):
+        elif T > 0.0 and np.random.uniform() < math.exp(-dE/T):
             Latice[i][j] = q_0
 
 
         t += 1
-
         if (t % nSteps) == 0:
-            paintLatice(Latice)
-            pygame.display.flip()
+            paintLattice(Latice)
             t1 = time.clock()
             if (t1-t0) > 0.001:
-                print 'Global Energy = ',global_E(nSites,Latice)
+                print 'Global Energy = ', global_E(nSites,Latice)
                 t0 = t1
                 # calculate execution time
                 dt = time.clock()-t_total
@@ -262,8 +259,13 @@ if __name__ == "__main__":
           #   if global_E(nSites,Latice)==0:
           #       flag = -1
         step += 1
-        if step >= N_tau(1) and T-dT > 0.1:
+        if step >= N_tau(1):
             T -= dT
+            if T < 0:
+                T = 0.0
+            else:
+                print  "Temperatrure:", T
             step = 0
-            print "Temperature:", T
 
+if __name__ == "__main__":
+    run()
