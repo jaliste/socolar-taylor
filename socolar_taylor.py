@@ -121,17 +121,17 @@ def global_E(D,M):
         for j in range(D):
             E += Pre_dE (i,j,M)
         
-    return E
+    return E / 2
 
 
-zoom_factor = 7.0
-gen_b = 53 *  np.array([1,0])
-gen_a = 53 *  np.array([math.cos(math.pi/3), math.sin(math.pi/3)])
+zoom_factor = 4.0
+gen_b = 100 *  np.array([1,0])
+gen_a = 100 *  np.array([math.cos(math.pi/3), math.sin(math.pi/3)])
 
 
 def ColorCell(cell, i, j):
    pos = zoom_factor * (np.array([0,0]) + i*gen_a + j*gen_b)
-   surf = pygame.transform.rotozoom(hexagones[cell], -90, zoom_factor)
+   surf = pygame.transform.rotozoom(hexagones[cell], 0, zoom_factor)
    screen.blit(surf, pos)
  
 # Get command line arguments, if any
@@ -148,7 +148,7 @@ Tiles = np.array(range(-6,0) + range(1,7) )
 #print 'nSites = ', nSites
 #print 'CellSize = ', CellSize
 #print 'nSteps = ',nSteps
-#print 'Initial Global Energy = ',global_E(nSites,Latice)
+#print 'Initial Global Energy = ',global_E(nSites,lattice)
 
 
 def subLattice(X, nSites):
@@ -168,8 +168,7 @@ def N_tau(tau):
 
 def init_screen(size):
     pygame.init()
-    UpColor = 255, 0, 0       # red
-    DownColor = 0, 0, 255     # blue
+    UpColor = 255, 255, 255       # red
     screen = pygame.display.set_mode(size)
     pygame.display.set_caption('2D Socolar-Taylor Model Simulator')
     screen.fill(UpColor)
@@ -191,10 +190,15 @@ B = np.mat('0 1; 0 0')
 C = np.mat('0 0; 1 0')
 D = np.mat('0 0; 0 1')
 
+e_A = np.array([ math.sqrt(2/3.), 0,-1/math.sqrt(3)])
+e_B = np.array([-math.sqrt(2/3.), 0,-1/math.sqrt(3)])
+e_C = np.array([ 0, math.sqrt(2/3.), 1/math.sqrt(3)])
+e_D = np.array([ 0,-math.sqrt(2/3.), 1/math.sqrt(3)])
+
 
 # Set defaults
 T = 1.0  # Temperature  
-nSites = 16  #30
+nSites = 32  #30
 CellSize = 64  #16
 zoom_factor = 7.0/nSites
 hexagones = dict()
@@ -203,15 +207,42 @@ for idx in range(-6,0) + range(1,7):
 
 #-----------------------------------------------------
 
-Latice = Initialize (nSites)
-size = (int(CellSize*1.5*nSites*zoom_factor),int(CellSize*nSites*zoom_factor))
+lattice = Initialize (nSites)
+size = [int(e) for e in (gen_a+gen_b) * (nSites + 1) * zoom_factor]
+
+spin_A = { 0: e_C, 1: e_B, 2: e_D }
+spin_B = { 0: e_D, 1: e_A, 2: e_C }
+spin_C = { 0: e_A, 1: e_D, 2: e_B }
+spin_D = { 0: e_B, 1: e_C, 2: e_A } 
+spins = [spin_A, spin_B, spin_C, spin_D]
+
+def spin (tile_type, tile):
+    #tile_type = 0 - > A, 1 -> B, 2 -> C, 3 -> D
+
+    eq_tile = abs(tile) % 3
+    return 3/2. * spins[tile_type][eq_tile]
+
+
+def phi_1 (lattice, nSites):
+    sublat = [
+         subLattice(A,nSites/2) == 1,
+         subLattice(B,nSites/2) == 1,
+         subLattice(C,nSites/2) == 1,
+         subLattice(D,nSites/2) == 1]
+    N  = nSites * nSites
+    sigma_n_tot = 1./N * sum([ sum([ spin (i, tile) for tile in lattice[sublat[i]]]) for i in [0,1,2,3]])
+
+    return max([np.dot (sigma_n_tot, e) for e in [e_A,e_B,e_C,e_D]]) 
+
+    
+
 
 screen = init_screen(size)
 
 # Main loop
 def run():
     global T
-    global Latice
+    global lattice
 
     nSteps = 1000
     dT = 0.01
@@ -231,23 +262,24 @@ def run():
         q_0 = np.random.choice(Tiles)
 
         # Any system energy change if flip dipol
-        dE = dU(i,j,q_0,Latice)
+        dE = dU(i,j,q_0,lattice)
 
         # flip if system will have lower energy
         if dE <= 0.:
-            Latice[i][j] = q_0
+            lattice[i][j] = q_0
 
             # otherwise do random decision     
         elif T > 0.0 and np.random.uniform() < math.exp(-dE/T):
-            Latice[i][j] = q_0
+            lattice[i][j] = q_0
 
 
         t += 1
         if (t % nSteps) == 0:
-            paintLattice(Latice)
+            paintLattice(lattice)
             t1 = time.clock()
             if (t1-t0) > 0.001:
-                print 'Global Energy = ', global_E(nSites,Latice)
+                print 'Global Energy = ', global_E(nSites,lattice)
+                print 'Phi_1 = ', phi_1(lattice, nSites)
                 t0 = t1
                 # calculate execution time
                 dt = time.clock()-t_total
@@ -255,8 +287,8 @@ def run():
           #if T < 0.01: 
              #flag = -1
           #   print 'Initial Global Energy = ',IE   
-          #   print 'Final Global Energy = ',global_E(nSites,Latice) 
-          #   if global_E(nSites,Latice)==0:
+          #   print 'Final Global Energy = ',global_E(nSites,lattice) 
+          #   if global_E(nSites,lattice)==0:
           #       flag = -1
         step += 1
         if step >= N_tau(1):
