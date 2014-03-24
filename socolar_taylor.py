@@ -198,7 +198,7 @@ e_D = np.array([ 0,-math.sqrt(2/3.), 1/math.sqrt(3)])
 
 # Set defaults
 T = 1.0  # Temperature  
-nSites = 32  #30
+nSites = 16  #30
 CellSize = 64  #16
 zoom_factor = 7.0/nSites
 hexagones = dict()
@@ -296,7 +296,7 @@ def run():
             if T < 0:
                 T = 0.0
             else:
-                print  "Temperatrure:", T
+                print  "Temperature:", T
             step = 0
 
 if __name__ == "__main__":
