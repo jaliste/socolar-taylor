@@ -10,4 +10,5 @@ def Initialize(nSites):
 	      
 	return state
 
-
+def nada():
+    pass
